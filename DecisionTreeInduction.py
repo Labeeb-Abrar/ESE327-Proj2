@@ -58,14 +58,14 @@ def generate_DT(D: pd.DataFrame, attr_list, target_attr, majority=None):
     print(f"best attribute: {split_criteria}")
     N.set(split_criteria)
 
-    max_key = max(classlist_in_d, key=classlist_in_d.get)
-    majority_class = attr_list[max_key]
-    new_attr_list = attr_list.remove(split_criteria)
-
+    max_key = list(classlist_in_d.values()).index(max(classlist_in_d.values())) # get majority class in Dj
+    majority_class = list(classlist_in_d.keys())[max_key]
+    new_attr_list = attr_list.copy()
+    new_attr_list.remove(split_criteria)
 
     for attr, Dj in D.groupby(split_criteria):
-        print(f"{attr}: {Dj}")
-        N.append(generate_DT(Dj, new_attr_list, target_attr, majority_class))
+        newNode = generate_DT(Dj, new_attr_list, target_attr, majority_class)
+        N.append(newNode)
     
     return N
 
