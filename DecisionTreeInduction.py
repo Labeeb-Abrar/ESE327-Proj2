@@ -12,19 +12,6 @@ def entropy(data):
 
     return -sum([pi * math.log(pi) for pi in p]) # Info(data) = -sum( pi*log(pi) )
 
-# def info_gain(d, attr, target_attr):
-#     # Split Data by Possible Vals of Attribute:
-#     d_split = d.groupby(attr)
-
-#     # Calculate Entropy for Target Attribute, as well as Proportion of Obs in Each Data-Split
-#     entropy_ratio_dataframe = d_split.agg({target_attr: [entropy, lambda x: len(x) / len(d)]})[attr]
-#     entropy_ratio_dataframe.columns = ['Entropy', 'PropObservations']
-#     print(entropy_ratio_dataframe)
-
-#     # Calculate Information Gain:
-#     new_entropy = sum(entropy_ratio_dataframe['Entropy'] * entropy_ratio_dataframe['PropObservations'])
-#     old_entropy = entropy(d[target_attr])
-#     return old_entropy - new_entropy
 def info_gain(d: pd.DataFrame, attr, target_attr):
     # Split Data by Possible Vals of Attribute:
     d_split = d.groupby(attr)
