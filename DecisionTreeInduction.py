@@ -18,7 +18,7 @@ def entropy(data):
 def info_gain(d: pd.DataFrame, attr, target_attr):
     # Split Data by Possible Vals of Attribute:
     d_split = d.groupby(attr)
-    # print(d_split.indices)
+    pprint(d_split.indices)
     # Calculate Entropy for Target Attribute, as well as Proportion of Obs in Each Data-Split:
     entropies = []
     ratio = []
@@ -38,9 +38,9 @@ def info_gain(d: pd.DataFrame, attr, target_attr):
     }, index=d_split.groups.keys())
 
     # Calculate Information Gain:
-    new_entropy = sum(entropy_ratio_dataframe['entropy'] * entropy_ratio_dataframe['|dj|/|d|'])
-    old_entropy = entropy(d[target_attr])
-    return old_entropy - new_entropy
+    expected_entropy = sum(entropy_ratio_dataframe['entropy'] * entropy_ratio_dataframe['|dj|/|d|'])
+    original_entropy = entropy(d[target_attr])
+    return original_entropy - expected_entropy
 
 def generate_DT(D: pd.DataFrame, attr_list, target_attr, majority=None):
     # Tally target attribute:
@@ -99,5 +99,6 @@ attributes_list.remove(predicting_class)
 
 total_rows = int(dataset.shape[0] * .8)
 training_data = dataset.iloc[1:total_rows]  # 80% of data as training data
+
 dtree = decision_tree_induction(dataset, attributes_list, predicting_class)
 pprint(dtree)
