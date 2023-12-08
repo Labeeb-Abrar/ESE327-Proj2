@@ -87,18 +87,17 @@ def decision_tree_induction(D: pd.DataFrame, attr_list, target_attr):
 
 
 ########
-df_shroom = pd.read_csv('data/mushroom_data.csv')
+
 id = 73
 data = fetch_ucirepo(id=id)
-df_shroom2 = data['data']['original']
-print(df_shroom)
+dataset = data['data']['original']
 
 # Get class to predict
-predicting_class = "class"
-attributes_list = list(df_shroom.columns)
+predicting_class = "poisonous"
+attributes_list = list(dataset.columns)
 attributes_list.remove(predicting_class)
 
-total_rows = int(df_shroom.shape[0] * .8)
-training_data = df_shroom.iloc[1:total_rows]  # 80% of data as training data
-dtree = decision_tree_induction(df_shroom, attributes_list, predicting_class)
+total_rows = int(dataset.shape[0] * .8)
+training_data = dataset.iloc[1:total_rows]  # 80% of data as training data
+dtree = decision_tree_induction(dataset, attributes_list, predicting_class)
 pprint(dtree)
