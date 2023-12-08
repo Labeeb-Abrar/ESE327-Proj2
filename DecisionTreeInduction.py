@@ -31,14 +31,8 @@ def info_gain(d: pd.DataFrame, attr, target_attr):
         group_ratio = len(group_data) / len(d) # |dj|/|d|
         ratio.append(group_ratio)    # Info_a(D)
 
-    # Create DataFrame with Entropy and Proportion of Observations:
-    entropy_ratio_dataframe = pd.DataFrame({
-        'entropy': entropies,
-        '|dj|/|d|': ratio
-    }, index=d_split.groups.keys())
-
     # Calculate Information Gain:
-    expected_entropy = sum(entropy_ratio_dataframe['entropy'] * entropy_ratio_dataframe['|dj|/|d|'])
+    expected_entropy = sum(np.array(entropies) * np.array(ratio))
     original_entropy = entropy(d[target_attr])
     return original_entropy - expected_entropy
 
@@ -88,17 +82,17 @@ def decision_tree_induction(D: pd.DataFrame, attr_list, target_attr):
 
 ########
 
-id = 73
-data = fetch_ucirepo(id=id)
-dataset = data['data']['original']
+id = 19
+fetched_data = fetch_ucirepo(id=id)
+dataset = fetched_data['data']['original']
 
 # Get class to predict
-predicting_class = "poisonous"
-attributes_list = list(dataset.columns)
-attributes_list.remove(predicting_class)
+predicting_class = list(fetched_data['data']['targets'])[0] # data to be predicted
+attributes_list = list(fetched_data['data']['features'])    # attribute list
 
 total_rows = int(dataset.shape[0] * .8)
 training_data = dataset.iloc[1:total_rows]  # 80% of data as training data
 
 dtree = decision_tree_induction(dataset, attributes_list, predicting_class)
+print("Decision tree:")
 pprint(dtree)
