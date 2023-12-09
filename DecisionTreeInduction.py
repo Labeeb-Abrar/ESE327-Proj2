@@ -2,7 +2,6 @@ import pandas as pd
 import math
 from collections import Counter
 import numpy as np
-from Node import Node
 from pprint import pprint
 from ucimlrepo import fetch_ucirepo
 
@@ -17,7 +16,7 @@ def entropy(data):
 def info_gain(d: pd.DataFrame, attr, target_attr):
     # data by attribute
     d_attr = d.groupby(attr)
-    print(d_attr.indices)
+    # print(d_attr.indices)
     
     # |dj|/|d| ratio and entropy
     ratio = []
@@ -25,8 +24,8 @@ def info_gain(d: pd.DataFrame, attr, target_attr):
 
     for i, j in d_attr:
         # print(group_data[target_attr])
-        entropies.append(entropy(j[target_attr])) # pi*log(pi)
         ratio.append(len(j) / len(d))    # |dj|/|d|
+        entropies.append(entropy(j[target_attr])) # pi*log(pi)
 
     # Calculate Information Gain:
     expected_entropy = sum(np.array(ratio) * np.array(entropies))
@@ -35,8 +34,8 @@ def info_gain(d: pd.DataFrame, attr, target_attr):
 
     # split info to prevent overfitting
     split_info = entropy(entropies) # |dj|/|d| * log(|dj|/|d|)
-    gain_ratio = gain / split_info
-    return gain_ratio
+    gain_ratio_inversed = split_info / gain  # accounting for dividing by zero
+    return gain_ratio_inversed
 
 # Generates decision tree from dataset (dataset has to be type Dataframe (fetching datasets from ucirepo))
 def generate_DT(D: pd.DataFrame, attr_list, target_attr, majority=None):
@@ -56,7 +55,7 @@ def generate_DT(D: pd.DataFrame, attr_list, target_attr, majority=None):
 
     # split criteria
     gains = [info_gain(D, attr, target_attr) for attr in attr_list] # gain correspond with each attribute in the list
-    index_of_max = gains.index(max(gains))  # pick with highest gain
+    index_of_max = gains.index(min(gains))  # bc of divide-by-zero cases, gain is inversed during 
     split_criteria = attr_list[index_of_max]    # best class to split
 
     N = {split_criteria: {}}    # Initialize node using python Dictionary data structure
@@ -76,13 +75,6 @@ def generate_DT(D: pd.DataFrame, attr_list, target_attr, majority=None):
             N[split_criteria][attr] = subtree
     return N
 
-def decision_tree_induction(D: pd.DataFrame, attr_list, target_attr):
-    print("Generating Decision Tree")
-    targetattr_hashed = Counter(x for x in D[attributes_list])
-    index_of_max = list(targetattr_hashed.values()).index(max(targetattr_hashed.values()))
-    majority_class = list(targetattr_hashed.keys())[index_of_max]  # most common value of target attribute in dataset
-    return generate_DT(D, attr_list, target_attr, majority_class)
-
 # classifies using the dtree
 # query is a type-Dictionary attributes of the instance being classified
 def classify(query, dtree, default):
@@ -98,9 +90,10 @@ def classify(query, dtree, default):
     else:
         return default
 #######################
-
+fetch_list = [19, 73, 105, 936, 827]
 id = 19
 fetched_data = fetch_ucirepo(id=id)
+
 dataset_name = fetched_data.metadata.name
 dataset = fetched_data.data.original
 print(f"Dataset title: {dataset_name}")
@@ -108,21 +101,30 @@ print(f"Dataset title: {dataset_name}")
 predicting_class = list(fetched_data.data.targets)[0] # data to be predicted
 attributes_list = list(fetched_data.data.features)    # attribute list
 
-total_rows = int(dataset.shape[0] * .8)
-training_data = dataset.iloc[1:total_rows]  # 80% of data as training data
-test_data = dataset.iloc[total_rows:]   # 20% as test data
+training_rows = int(dataset.shape[0] * .7)
+training_data = dataset.iloc[1:training_rows]  # 70% of data as training data
+test_data = dataset.iloc[training_rows:]   # 30% as test data
 
+def decision_tree_induction(D: pd.DataFrame, attr_list, target_attr):
+    print("Generating Decision Tree...")
+    targetattr_hashed = Counter(x for x in D[attributes_list])
+    index_of_max = list(targetattr_hashed.values()).index(max(targetattr_hashed.values()))
+    majority_class = list(targetattr_hashed.keys())[index_of_max]  # most common value of target attribute in dataset
+    return generate_DT(D, attr_list, target_attr, majority_class)    
 dtree = decision_tree_induction(training_data, attributes_list, predicting_class)
 print(f"{dataset_name} Decision tree:")
 pprint(dtree)   # looks nicer to show tree
 
+# default handling, get the class that is close-to-least present in the dataset (in this case we're using median).
+# This is a band-aid solution to the fitting problem
 predict_data_possibilities = list(Counter(dataset[predicting_class]))    # sorted list of data in the prediction class (the classification tags)
-default_tag = predict_data_possibilities[(int)(1 + len(predict_data_possibilities)/2)]    # default handling, get the class that is close-to-least present in the dataset (in this case we're using median). This is a band-aid solution to the fitting problem - bad accuracy
+median_point = (int)(-1 + len(predict_data_possibilities) * 0.5) if len(predict_data_possibilities) > 2 else (int)(len(predict_data_possibilities)-1)
+default_tag = predict_data_possibilities[median_point]
 
-# passes each row from the database to the classify function
-for row_dict in test_data.to_dict(orient='records'):
-    classed = classify(row_dict, dtree, default_tag)
-    print(f"{row_dict} ==> {classed}")
+# passes each row from the database for classification
+# for row_dict in test_data.to_dict(orient='records'):
+#     classed = classify(row_dict, dtree, default_tag)
+#     print(f"{row_dict} ==> {classed}")
 
 # obtaining accuracy
 # sum( the number of times the decision tree has yielded same classification as training_dataset / size of training_dataset
