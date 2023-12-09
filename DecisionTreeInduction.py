@@ -11,88 +11,120 @@ def entropy(data):
     entropy_list= []
     for x in hashed_data.values():
         p = (x / len(data))
-        entropy_list.append(-p * math.log(p, 2))
+        entropy_list.append(p * math.log(p, 2))
 
     return sum(entropy_list) # Info(data) = -sum( pi*log(pi) )
-
 def info_gain(d: pd.DataFrame, attr, target_attr):
-    # Split Data by Possible Vals of Attribute:
-    d_split = d.groupby(attr)
-    pprint(d_split.indices)
-    # Calculate Entropy for Target Attribute, as well as Proportion of Obs in Each Data-Split:
-    entropies = []
+    # data by attribute
+    d_attr = d.groupby(attr)
+    print(d_attr.indices)
+    
+    # |dj|/|d| ratio and entropy
     ratio = []
+    entropies = []
 
-    for group_name, group_data in d_split:
+    for i, j in d_attr:
         # print(group_data[target_attr])
-        group_entropy = entropy(group_data[target_attr])    # log(|dj|/|d|)
-        entropies.append(group_entropy) # Info(D)
-        
-        group_ratio = len(group_data) / len(d) # |dj|/|d|
-        ratio.append(group_ratio)    # Info_a(D)
+        entropies.append(entropy(j[target_attr])) # pi*log(pi)
+        ratio.append(len(j) / len(d))    # |dj|/|d|
 
     # Calculate Information Gain:
-    expected_entropy = sum(np.array(entropies) * np.array(ratio))
+    expected_entropy = sum(np.array(ratio) * np.array(entropies))
     original_entropy = entropy(d[target_attr])
-    return original_entropy - expected_entropy
+    gain = original_entropy - expected_entropy
 
+    # split info to prevent overfitting
+    split_info = entropy(entropies) # |dj|/|d| * log(|dj|/|d|)
+    gain_ratio = gain / split_info
+    return gain_ratio
+
+# Generates decision tree from dataset (dataset has to be type Dataframe (fetching datasets from ucirepo))
 def generate_DT(D: pd.DataFrame, attr_list, target_attr, majority=None):
-    # Tally target attribute:
+    # count the number of classes in D
     classlist_in_d = Counter(x for x in D[target_attr])
 
-    # First check: Is this split of the dataset homogeneous?
+    # if D is all one class
     if len(classlist_in_d) == 1:
         return list(classlist_in_d.keys())[0]
 
-    # Second check: Is this split of the dataset empty?
-    # if yes, return a default value
-    if D.empty or (not attr_list):
+    # is D empty
+    if D.empty or not attr_list:
         return majority
 
-    # Otherwise: This dataset is ready to be divvied up!
-    # # Get Default Value for next recursive call of this function:
     index_of_max = list(classlist_in_d.values()).index(max(classlist_in_d.values()))
     majority_class = list(classlist_in_d.keys())[index_of_max]  # most common value of target attribute in dataset
 
-    # Choose Best Attribute to split on:
-    gains = [info_gain(D, attr, target_attr) for attr in attr_list]
-    index_of_max = gains.index(max(gains))  # pick one with highest gain
-    split_criteria = attr_list[index_of_max]    # best splitting decision
+    # split criteria
+    gains = [info_gain(D, attr, target_attr) for attr in attr_list] # gain correspond with each attribute in the list
+    index_of_max = gains.index(max(gains))  # pick with highest gain
+    split_criteria = attr_list[index_of_max]    # best class to split
 
-    # Create an empty tree, to be populated in a moment
-    N = {split_criteria: {}}
+    N = {split_criteria: {}}    # Initialize node using python Dictionary data structure
+
+    #   pass the attribute list without the best attribute (greedy part)
     new_attr_list = []
     for i in attr_list:
         if i != split_criteria:
             new_attr_list.append(i)
 
-    # recursion
+    # get tree node from recursion
     for attr, Dj in D.groupby(split_criteria):
-        subtree = generate_DT(Dj, new_attr_list, target_attr, majority_class)
-        N[split_criteria][attr] = subtree
+        if D.empty or not attr_list:
+            N[split_criteria][attr] = majority_class            
+        else:
+            subtree = generate_DT(Dj, new_attr_list, target_attr, majority_class)
+            N[split_criteria][attr] = subtree
     return N
 
 def decision_tree_induction(D: pd.DataFrame, attr_list, target_attr):
-    print("generating Decision Tree")
+    print("Generating Decision Tree")
     targetattr_hashed = Counter(x for x in D[attributes_list])
     index_of_max = list(targetattr_hashed.values()).index(max(targetattr_hashed.values()))
     majority_class = list(targetattr_hashed.keys())[index_of_max]  # most common value of target attribute in dataset
     return generate_DT(D, attr_list, target_attr, majority_class)
 
-
-########
+# classifies using the dtree
+# query is a type-Dictionary attributes of the instance being classified
+def classify(query, dtree, default):
+    node = list(dtree.keys())[0]
+    attr_value = query[node]
+    # find if the first attribute in decision tree is in the test line
+    if attr_value in dtree[node].keys():
+        result = dtree[node][attr_value]
+        if isinstance(result, dict): # child could be another dictionary like the parent, then traverse
+            return classify(query, result, default)
+        else:
+            return result
+    else:
+        return default
+#######################
 
 id = 19
 fetched_data = fetch_ucirepo(id=id)
-dataset = fetched_data['data']['original']
-
+dataset_name = fetched_data.metadata.name
+dataset = fetched_data.data.original
+print(f"Dataset title: {dataset_name}")
 # Get class to predict
-predicting_class = list(fetched_data['data']['targets'])[0] # data to be predicted
-attributes_list = list(fetched_data['data']['features'])    # attribute list
+predicting_class = list(fetched_data.data.targets)[0] # data to be predicted
+attributes_list = list(fetched_data.data.features)    # attribute list
 
 total_rows = int(dataset.shape[0] * .8)
 training_data = dataset.iloc[1:total_rows]  # 80% of data as training data
+test_data = dataset.iloc[total_rows:]   # 20% as test data
 
-dtree = decision_tree_induction(dataset, attributes_list, predicting_class)
-print("Decision tree:")
-pprint(dtree)
+dtree = decision_tree_induction(training_data, attributes_list, predicting_class)
+print(f"{dataset_name} Decision tree:")
+pprint(dtree)   # looks nicer to show tree
+
+predict_data_possibilities = list(Counter(dataset[predicting_class]))    # sorted list of data in the prediction class (the classification tags)
+default_tag = predict_data_possibilities[(int)(1 + len(predict_data_possibilities)/2)]    # default handling, get the class that is close-to-least present in the dataset (in this case we're using median). This is a band-aid solution to the fitting problem - bad accuracy
+
+# passes each row from the database to the classify function
+for row_dict in test_data.to_dict(orient='records'):
+    classed = classify(row_dict, dtree, default_tag)
+    print(f"{row_dict} ==> {classed}")
+
+# obtaining accuracy
+# sum( the number of times the decision tree has yielded same classification as training_dataset / size of training_dataset
+tested_classification = test_data.apply(classify, axis=1, args=(dtree, default_tag))
+print(f'Accuracy of decision tree: {100 * sum(test_data[predicting_class]==tested_classification) / len(test_data.index)}%')
