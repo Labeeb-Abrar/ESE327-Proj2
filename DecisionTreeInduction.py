@@ -37,6 +37,13 @@ def info_gain(d: pd.DataFrame, attr, target_attr):
     gain_ratio_inversed = split_info / gain  # accounting for dividing by zero
     return gain_ratio_inversed
 
+# Selects the best attribute depending on information gain
+def attribute_selection(D, attr_list, target_attr):
+    gains = [info_gain(D, attr, target_attr) for attr in attr_list] # gain correspond with each attribute in the list
+    index_of_max = gains.index(min(gains))  # to prevent divide-by-zero cases, gain is inversed
+    split_criteria = attr_list[index_of_max]    # best class to split
+    return split_criteria
+
 # Generates decision tree from dataset (dataset has to be type Dataframe (fetching datasets from ucirepo))
 def generate_DT(D: pd.DataFrame, attr_list, target_attr, majority=None):
     # count the number of classes in D
@@ -54,9 +61,7 @@ def generate_DT(D: pd.DataFrame, attr_list, target_attr, majority=None):
     majority_class = list(classlist_in_d.keys())[index_of_max]  # most common value of target attribute in dataset
 
     # split criteria
-    gains = [info_gain(D, attr, target_attr) for attr in attr_list] # gain correspond with each attribute in the list
-    index_of_max = gains.index(min(gains))  # bc of divide-by-zero cases, gain is inversed during 
-    split_criteria = attr_list[index_of_max]    # best class to split
+    split_criteria = attribute_selection(D, attr_list, target_attr)
 
     N = {split_criteria: {}}    # Initialize node using python Dictionary data structure
 
