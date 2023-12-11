@@ -46,7 +46,7 @@ def attribute_selection(D, attr_list, target_attr):
 
 # Generates decision tree from dataset (dataset has to be type Dataframe (fetching datasets from ucirepo))
 def generate_DT(D: pd.DataFrame, attr_list, target_attr, majority=None):
-    # count the number of classes in D
+    # count target tags in D
     classlist_in_d = Counter(x for x in D[target_attr])
 
     # if D is all one class
