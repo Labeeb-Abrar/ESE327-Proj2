@@ -8,7 +8,11 @@ from memory_profiler import profile
 import tracemalloc
 import time
 
-
+def writeOutput(content, title):
+    # Open a file in append mode ('a')
+    with open(f'{title}_output.txt', 'a') as file:
+        # Write data to the file
+        file.write(f"\n{content}")
 
 def entropy(data):
     hashed_data = Counter(data) # dictionary of data, indiced by class
@@ -129,8 +133,8 @@ for id in fetch_list:
     tracemalloc.start()    
     dtree = decision_tree_induction(training_data, attributes_list, predicting_class)
 
-    print(f"{dataset_name} Decision tree:")
-    pprint(dtree)   # looks nicer to show tree
+    writeOutput(f"{dataset_name} Decision tree:", dataset_name)
+    writeOutput(dtree, dataset_name)   # looks nicer to show tree
 
     # default handling, get the class that is close-to-least present in the dataset (in this case we're using median).
     # This is a band-aid solution to the fitting problem
@@ -146,9 +150,9 @@ for id in fetch_list:
 # obtaining accuracy
 # sum( the number of times the decision tree has yielded same classification as training_dataset / size of training_dataset
     tested_classification = test_data.apply(classify, axis=1, args=(dtree, default_tag))
-    print(f'Accuracy of decision tree: {100 * sum(test_data[predicting_class]==tested_classification) / len(test_data.index)}%')
+    writeOutput(f'Accuracy of decision tree: {100 * sum(test_data[predicting_class]==tested_classification) / len(test_data.index)}%', dataset_name)
     end=time.time()
-    print("The time of execution of DecisionTreeInduction is :",(end-start) * 10**3, "ms")
+    writeOutput(f"The time of execution of DecisionTreeInduction is :{(end-start) * 10**3} \"ms\"", dataset_name)
     memory=tracemalloc.get_traced_memory()
     tracemalloc.stop()
-    print("The Memory utilized for DecisionTreeInduction is :",memory[0],"KB")
+    writeOutput(f"The Memory utilized for DecisionTreeInduction is :\"{memory[0]}\"KB\"", dataset_name)

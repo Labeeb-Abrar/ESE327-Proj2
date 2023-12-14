@@ -1,0 +1,6 @@
+
+Mushroom Decision tree:
+{'odor': {'a': 'e', 'c': 'p', 'f': 'p', 'l': 'e', 'n': {'spore-print-color': {'h': 'e', 'k': 'e', 'n': 'e', 'r': 'p', 'w': {'stalk-root': {'b': {'cap-color': {'c': 'e', 'n': 'e', 'w': 'p'}}}}}}, 'p': 'p', 's': 'p', 'y': 'p'}}
+Accuracy of decision tree: 97.99015586546349%
+The time of execution of DecisionTreeInduction is :1249.112844467163 "ms"
+The Memory utilized for DecisionTreeInduction is :"74404"KB"
