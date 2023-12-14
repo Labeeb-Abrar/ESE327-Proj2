@@ -1,0 +1,5 @@
+
+HCV data Decision tree:
+0=Blood Donor
+HCV data Decision tree:
+0=Blood Donor

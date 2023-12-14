@@ -106,7 +106,7 @@ def classify(query, dtree, default):
     else:
         return default
 #######################
-fetch_list = [19, 73, 105, 936, 827]
+fetch_list = [222,225]
 
 for id in fetch_list:
     fetched_data = fetch_ucirepo(id=id)
