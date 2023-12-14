@@ -5,6 +5,8 @@ import numpy as np
 from pprint import pprint
 from ucimlrepo import fetch_ucirepo
 from memory_profiler import profile
+import tracemalloc
+import time
 
 
 
@@ -48,7 +50,7 @@ def attribute_selection(D, attr_list, target_attr):
     return split_criteria
 
 # Generates decision tree from dataset (dataset has to be type Dataframe (fetching datasets from ucirepo))
-@profile
+
 def generate_DT(D: pd.DataFrame, attr_list, target_attr, majority=None):
     # count target tags in D
     classlist_in_d = Counter(x for x in D[target_attr])
@@ -86,7 +88,7 @@ def generate_DT(D: pd.DataFrame, attr_list, target_attr, majority=None):
 
 # classifies using the dtree
 # query is a type-Dictionary attributes of the instance being classified
-@profile
+
 def classify(query, dtree, default):
     node = list(dtree.keys())[0]
     attr_value = query[node]
@@ -115,14 +117,17 @@ training_rows = int(dataset.shape[0] * .7)
 training_data = dataset.iloc[1:training_rows]  # 70% of data as training data
 test_data = dataset.iloc[training_rows:]   # 30% as test data
 
-@profile
+
 def decision_tree_induction(D: pd.DataFrame, attr_list, target_attr):
     print("Generating Decision Tree...")
     targetattr_hashed = Counter(x for x in D[attributes_list])
     index_of_max = list(targetattr_hashed.values()).index(max(targetattr_hashed.values()))
     majority_class = list(targetattr_hashed.keys())[index_of_max]  # most common value of target attribute in dataset
-    return generate_DT(D, attr_list, target_attr, majority_class)    
+    return generate_DT(D, attr_list, target_attr, majority_class)
+start=time.time()
+tracemalloc.start()    
 dtree = decision_tree_induction(training_data, attributes_list, predicting_class)
+
 print(f"{dataset_name} Decision tree:")
 pprint(dtree)   # looks nicer to show tree
 
@@ -141,3 +146,8 @@ default_tag = predict_data_possibilities[median_point]
 # sum( the number of times the decision tree has yielded same classification as training_dataset / size of training_dataset
 tested_classification = test_data.apply(classify, axis=1, args=(dtree, default_tag))
 print(f'Accuracy of decision tree: {100 * sum(test_data[predicting_class]==tested_classification) / len(test_data.index)}%')
+end=time.time()
+print("The time of execution of DecisionTreeInduction is :",(end-start) * 10**3, "ms")
+memory=tracemalloc.get_traced_memory()
+tracemalloc.stop()
+print("The Memory utilized for DecisionTreeInduction is :",memory[0],"KB")
