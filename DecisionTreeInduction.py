@@ -48,6 +48,7 @@ def attribute_selection(D, attr_list, target_attr):
     return split_criteria
 
 # Generates decision tree from dataset (dataset has to be type Dataframe (fetching datasets from ucirepo))
+@profile
 def generate_DT(D: pd.DataFrame, attr_list, target_attr, majority=None):
     # count target tags in D
     classlist_in_d = Counter(x for x in D[target_attr])
@@ -85,7 +86,7 @@ def generate_DT(D: pd.DataFrame, attr_list, target_attr, majority=None):
 
 # classifies using the dtree
 # query is a type-Dictionary attributes of the instance being classified
-
+@profile
 def classify(query, dtree, default):
     node = list(dtree.keys())[0]
     attr_value = query[node]
@@ -114,7 +115,7 @@ training_rows = int(dataset.shape[0] * .7)
 training_data = dataset.iloc[1:training_rows]  # 70% of data as training data
 test_data = dataset.iloc[training_rows:]   # 30% as test data
 
-
+@profile
 def decision_tree_induction(D: pd.DataFrame, attr_list, target_attr):
     print("Generating Decision Tree...")
     targetattr_hashed = Counter(x for x in D[attributes_list])
