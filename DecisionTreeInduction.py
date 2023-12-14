@@ -96,42 +96,43 @@ def classify(query, dtree, default):
         return default
 #######################
 fetch_list = [19, 73, 105, 936, 827]
-id = 19
-fetched_data = fetch_ucirepo(id=id)
 
-dataset_name = fetched_data.metadata.name
-dataset = fetched_data.data.original
-print(f"Dataset title: {dataset_name}")
-# Get class to predict
-predicting_class = list(fetched_data.data.targets)[0] # data to be predicted
-attributes_list = list(fetched_data.data.features)    # attribute list
+for id in fetch_list:
+    fetched_data = fetch_ucirepo(id=id)
 
-training_rows = int(dataset.shape[0] * .7)
-training_data = dataset.iloc[1:training_rows]  # 70% of data as training data
-test_data = dataset.iloc[training_rows:]   # 30% as test data
+    dataset_name = fetched_data.metadata.name
+    dataset = fetched_data.data.original
+    print(f"Dataset title: {dataset_name}")
+    # Get class to predict
+    predicting_class = list(fetched_data.data.targets)[0] # data to be predicted
+    attributes_list = list(fetched_data.data.features)    # attribute list
 
-def decision_tree_induction(D: pd.DataFrame, attr_list, target_attr):
-    print("Generating Decision Tree...")
-    targetattr_hashed = Counter(x for x in D[attributes_list])
-    index_of_max = list(targetattr_hashed.values()).index(max(targetattr_hashed.values()))
-    majority_class = list(targetattr_hashed.keys())[index_of_max]  # most common value of target attribute in dataset
-    return generate_DT(D, attr_list, target_attr, majority_class)    
-dtree = decision_tree_induction(training_data, attributes_list, predicting_class)
-print(f"{dataset_name} Decision tree:")
-pprint(dtree)   # looks nicer to show tree
+    training_rows = int(dataset.shape[0] * .7)
+    training_data = dataset.iloc[1:training_rows]  # 70% of data as training data
+    test_data = dataset.iloc[training_rows:]   # 30% as test data
 
-# default handling, get the class that is close-to-least present in the dataset (in this case we're using median).
-# This is a band-aid solution to the fitting problem
-predict_data_possibilities = list(Counter(dataset[predicting_class]))    # sorted list of data in the prediction class (the classification tags)
-median_point = (int)(-1 + len(predict_data_possibilities) * 0.5) if len(predict_data_possibilities) > 2 else (int)(len(predict_data_possibilities)-1)
-default_tag = predict_data_possibilities[median_point]
+    def decision_tree_induction(D: pd.DataFrame, attr_list, target_attr):
+        print("Generating Decision Tree...")
+        targetattr_hashed = Counter(x for x in D[attributes_list])
+        index_of_max = list(targetattr_hashed.values()).index(max(targetattr_hashed.values()))
+        majority_class = list(targetattr_hashed.keys())[index_of_max]  # most common value of target attribute in dataset
+        return generate_DT(D, attr_list, target_attr, majority_class)    
+    dtree = decision_tree_induction(training_data, attributes_list, predicting_class)
+    print(f"{dataset_name} Decision tree:")
+    pprint(dtree)   # looks nicer to show tree
 
-# passes each row from the database for classification
-# for row_dict in test_data.to_dict(orient='records'):
-#     classed = classify(row_dict, dtree, default_tag)
-#     print(f"{row_dict} ==> {classed}")
+    # default handling, get the class that is close-to-least present in the dataset (in this case we're using median).
+    # This is a band-aid solution to the fitting problem
+    predict_data_possibilities = list(Counter(dataset[predicting_class]))    # sorted list of data in the prediction class (the classification tags)
+    median_point = (int)(-1 + len(predict_data_possibilities) * 0.5) if len(predict_data_possibilities) > 2 else (int)(len(predict_data_possibilities)-1)
+    default_tag = predict_data_possibilities[median_point]
 
-# obtaining accuracy
-# sum( the number of times the decision tree has yielded same classification as training_dataset / size of training_dataset
-tested_classification = test_data.apply(classify, axis=1, args=(dtree, default_tag))
-print(f'Accuracy of decision tree: {100 * sum(test_data[predicting_class]==tested_classification) / len(test_data.index)}%')
+    # passes each row from the database for classification
+    # for row_dict in test_data.to_dict(orient='records'):
+    #     classed = classify(row_dict, dtree, default_tag)
+    #     print(f"{row_dict} ==> {classed}")
+
+    # obtaining accuracy
+    # sum( the number of times the decision tree has yielded same classification as training_dataset / size of training_dataset
+    tested_classification = test_data.apply(classify, axis=1, args=(dtree, default_tag))
+    print(f'Accuracy of decision tree: {100 * sum(test_data[predicting_class]==tested_classification) / len(test_data.index)}%')
