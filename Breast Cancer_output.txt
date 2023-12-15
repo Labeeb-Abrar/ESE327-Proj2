@@ -1,3 +1,0 @@
-
-Breast Cancer Decision tree:
-no-recurrence-events
